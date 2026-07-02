@@ -1,16 +1,25 @@
 /**
- * Enforces ForgeKit's internal runtime dependency flow.
- *
- * The governed runtime packages are @forgekit/web, @forgekit/ui, @forgekit/api,
+ * Enforces ForgeKit's internal package dependency flow: the allowed import graph
+ * among the runtime packages @forgekit/web, @forgekit/ui, @forgekit/api,
  * @forgekit/core, @forgekit/db, and @forgekit/config. Each package may import
  * only its single allowed next hop down the chain; reaching past a layer is
- * forbidden. Shared tooling config packages are exempt because they are
- * development infrastructure, not runtime flow.
+ * forbidden. "Runtime packages" here means these shipped app and library
+ * packages, as opposed to the shared tooling config packages, which are exempt
+ * because they are development infrastructure.
+ *
+ * The rule governs every import between these packages, value and type-only
+ * alike. An `import type { X } from "@forgekit/db"` is erased at build time and
+ * carries no runtime edge, but it still couples the two packages, so it must
+ * follow the same graph; route the type through the allowed layer instead. The
+ * rule checks static imports, re-exports, and dynamic `import("...")` with a
+ * string-literal specifier. A dynamic import whose specifier is not a string
+ * literal cannot be resolved statically and is left unchecked.
  */
 import type { Rule } from "eslint";
 import type {
   ExportAllDeclaration,
   ExportNamedDeclaration,
+  ImportExpression,
   ImportDeclaration,
   Literal
 } from "estree";
@@ -28,7 +37,8 @@ type GovernedPackage = (typeof governedPackages)[number];
 
 const governedPackageSet = new Set<string>(governedPackages);
 
-// Shared tooling lives under the same scope but is development infrastructure, not runtime flow.
+// Shared tooling lives under the same scope but is development
+// infrastructure, not part of the governed graph.
 const toolingPackages = new Set<string>([
   "@forgekit/eslint-config",
   "@forgekit/typescript-config",
@@ -37,7 +47,7 @@ const toolingPackages = new Set<string>([
 ]);
 
 /**
- * Strict single-hop runtime adjacency list: each governed package lists only the
+ * Strict single-hop package adjacency list: each governed package lists only the
  * next package it may directly depend on. Imports that reach past that next
  * package are exactly what this rule forbids.
  */
@@ -87,7 +97,7 @@ function getSourceValue(source: Literal | null | undefined): string | null {
 }
 
 /**
- * Reports packages with no allowed runtime dependency as "none" so the lint
+ * Reports packages with no allowed dependency as "none" so the lint
  * message names the empty allowed set instead of printing a blank value.
  */
 function formatAllowedDependencies(allowedDependencies: readonly GovernedPackage[]): string {
@@ -95,18 +105,18 @@ function formatAllowedDependencies(allowedDependencies: readonly GovernedPackage
 }
 
 /**
- * Flags invalid @forgekit imports in governed runtime packages.
+ * Flags invalid @forgekit imports in governed packages.
  *
  * For a file inside a governed package, the rule allows only that package's
- * configured runtime dependency and shared tooling packages. Any other governed
- * runtime package import is reported with the package that may not import the
+ * configured allowed dependency and shared tooling packages. Any other governed
+ * package import is reported with the package that may not import the
  * target package and the allowed set for that package.
  */
 export const dependencyFlowRule: Rule.RuleModule = {
   meta: {
     type: "problem",
     docs: {
-      description: "enforce the ForgeKit runtime package dependency flow",
+      description: "enforce the ForgeKit package dependency flow across value, type, and dynamic imports",
       url: "https://github.com/ByteMeBaby/forgekit/blob/main/docs/eslint-rules/dependency-flow.md"
     },
     schema: [],
@@ -118,7 +128,7 @@ export const dependencyFlowRule: Rule.RuleModule = {
   create(context: Rule.RuleContext): Rule.RuleListener {
     const currentPackage = getOwningPackage(context.filename);
 
-    // Files outside governed runtime packages are out of scope for this rule.
+    // Files outside governed packages are out of scope for this rule.
     if (currentPackage === null || !isGovernedPackage(currentPackage)) {
       return {};
     }
@@ -128,7 +138,7 @@ export const dependencyFlowRule: Rule.RuleModule = {
 
     function checkSource(
       source: Literal | null | undefined,
-      node: ImportDeclaration | ExportAllDeclaration | ExportNamedDeclaration
+      node: ImportDeclaration | ExportAllDeclaration | ExportNamedDeclaration | ImportExpression
     ): void {
       const sourceValue = getSourceValue(source);
 
@@ -139,14 +149,14 @@ export const dependencyFlowRule: Rule.RuleModule = {
 
       const targetPackage = getTargetPackage(sourceValue);
 
-      // Tooling packages are cleared before the runtime graph check because
+      // Tooling packages are cleared before the package graph check because
       // they share the @forgekit scope but are development infrastructure.
       if (targetPackage === null || toolingPackages.has(targetPackage)) {
         return;
       }
 
       // Unknown @forgekit targets pass because the rule governs only the known
-      // runtime graph; known targets pass only when they are the allowed next hop.
+      // package graph; known targets pass only when they are the allowed next hop.
       if (!isGovernedPackage(targetPackage) || allowedDependencySet.has(targetPackage)) {
         return;
       }
@@ -164,6 +174,9 @@ export const dependencyFlowRule: Rule.RuleModule = {
 
     return {
       ImportDeclaration(node: ImportDeclaration): void {
+        // Type-only imports are governed on purpose: the rule keys off the
+        // source and deliberately ignores importKind because type shapes still
+        // couple packages across the boundary.
         checkSource(node.source, node);
       },
       ExportAllDeclaration(node: ExportAllDeclaration): void {
@@ -171,6 +184,14 @@ export const dependencyFlowRule: Rule.RuleModule = {
       },
       ExportNamedDeclaration(node: ExportNamedDeclaration): void {
         checkSource(node.source, node);
+      },
+      ImportExpression(node: ImportExpression): void {
+        // Dynamic import() is the usual way to dodge a static cycle, so it is
+        // checked too. Only a string-literal specifier can be resolved
+        // statically; a computed specifier such as import(pkg) is left alone.
+        if (node.source.type === "Literal") {
+          checkSource(node.source, node);
+        }
       }
     };
   }

@@ -41,6 +41,11 @@ ruleTester.run("dependency-flow", dependencyFlowRule, {
       code: 'import { DB_VERSION } from "@forgekit/db";'
     },
     {
+      name: "core may import db dynamically",
+      filename: "/repo/packages/core/src/index.ts",
+      code: 'const mod = import("@forgekit/db");'
+    },
+    {
       name: "api may import core",
       filename: "/repo/apps/api/src/index.ts",
       code: 'import { CORE_VERSION } from "@forgekit/core";'
@@ -59,6 +64,11 @@ ruleTester.run("dependency-flow", dependencyFlowRule, {
       name: "plain external imports are ignored",
       filename: "/repo/packages/config/src/index.ts",
       code: 'import { defineConfig } from "vitest/config";'
+    },
+    {
+      name: "dynamic import of a non-literal specifier is not checked",
+      filename: "/repo/apps/api/src/index.ts",
+      code: "const mod = import(specifier);"
     }
   ],
   invalid: [
@@ -76,6 +86,16 @@ ruleTester.run("dependency-flow", dependencyFlowRule, {
       name: "api may not import db",
       filename: "/repo/apps/api/src/index.ts",
       code: 'import { DB_VERSION } from "@forgekit/db";',
+      errors: [
+        {
+          message: "@forgekit/api may not import @forgekit/db. Allowed internal dependencies: @forgekit/core."
+        }
+      ]
+    },
+    {
+      name: "api may not import db dynamically",
+      filename: "/repo/apps/api/src/index.ts",
+      code: 'const mod = import("@forgekit/db");',
       errors: [
         {
           message: "@forgekit/api may not import @forgekit/db. Allowed internal dependencies: @forgekit/core."
