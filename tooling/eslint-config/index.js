@@ -2,12 +2,13 @@
 
 import js from "@eslint/js";
 import forgekitPlugin from "@forgekit/eslint-plugin";
+import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 /**
  * Shared ForgeKit ESLint flat config that keeps lint rules identical across apps, packages, and tooling.
  */
-export const forgekitEslintConfig = tseslint.config(
+export const forgekitEslintConfig = defineConfig(
   {
     ignores: ["dist/**", "coverage/**", "node_modules/**"]
   },
