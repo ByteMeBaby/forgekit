@@ -16,7 +16,9 @@ ForgeKit is a pnpm and Turborepo workspace.
 
 ## Dependency Flow
 
-The current internal dependency flow is enforced through real imports:
+The internal dependency flow is enforced by a custom ESLint rule that fails the build on forbidden cross-package imports. A forbidden import is any runtime package reaching past its allowed direct internal dependency, such as `@forgekit/api` importing `@forgekit/db` directly.
+
+See [docs/eslint-rules/dependency-flow.md](docs/eslint-rules/dependency-flow.md) for the full rationale and implementation details.
 
 - `apps/web` imports `@forgekit/ui`
 - `apps/api` imports `@forgekit/core`
@@ -38,3 +40,5 @@ pnpm test
 ```
 
 The workspace uses strict TypeScript with `noUncheckedIndexedAccess`. ESLint rejects explicit `any`.
+
+A collaboration between a human and an AI 👨 ❤️ 🤖
