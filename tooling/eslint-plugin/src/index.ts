@@ -3,13 +3,11 @@
 import type { Rule } from "eslint";
 
 import { dependencyFlowRule } from "./rules/dependency-flow.js";
-import { noRawClientIpHeaderRule } from "./rules/no-raw-client-ip-header.js";
 import { noUnscopedDbDeleteRule } from "./rules/no-unscoped-db-delete.js";
 
 /** Rule-name to implementation map. Each key is used in ESLint config as `<namespace>/<rule-name>`. */
 export const rules = {
   "dependency-flow": dependencyFlowRule,
-  "no-raw-client-ip-header": noRawClientIpHeaderRule,
   "no-unscoped-db-delete": noUnscopedDbDeleteRule
 } satisfies Record<string, Rule.RuleModule>;
 
