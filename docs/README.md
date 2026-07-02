@@ -7,5 +7,4 @@ Every doc explains why the thing exists first, then the engineering and technica
 ## Current Docs
 
 - [Dependency Flow ESLint rule](eslint-rules/dependency-flow.md)
-- [No Raw Client IP Header ESLint rule](eslint-rules/no-raw-client-ip-header.md)
 - [No Unscoped DB Delete ESLint rule](eslint-rules/no-unscoped-db-delete.md)

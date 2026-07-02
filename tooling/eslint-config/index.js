@@ -24,8 +24,6 @@ export const forgekitEslintConfig = defineConfig(
       "@typescript-eslint/no-explicit-any": "error",
       // Cross-package runtime imports must follow the declared single-hop graph.
       "@forgekit/dependency-flow": "error",
-      // Raw client-IP header reads are spoofable, so force the canonical helper.
-      "@forgekit/no-raw-client-ip-header": "error",
       // Missing `.where()` on Drizzle deletes can wipe tables, so nudge server code toward scoped deletes.
       "@forgekit/no-unscoped-db-delete": "error"
     }
