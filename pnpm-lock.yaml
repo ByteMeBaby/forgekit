@@ -135,9 +135,6 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
-      typescript-eslint:
-        specifier: ^8.62.1
-        version: 8.62.1(eslint@9.39.4)(typescript@5.9.3)
       vitest:
         specifier: ^3.2.4
         version: 3.2.6(@types/node@26.1.0)
