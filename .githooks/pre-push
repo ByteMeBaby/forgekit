@@ -1,0 +1,12 @@
+#!/bin/sh
+# ForgeKit pre-push gate.
+# Runs the same checks a reviewer expects, so a push that breaks the build,
+# lint, types, or tests is stopped before it lands. Turbo caches by input
+# hash, so unchanged packages are skipped and this stays fast on most pushes.
+# Bypass in a genuine emergency with: git push --no-verify
+set -e
+
+pnpm build
+pnpm lint
+pnpm typecheck
+pnpm test
