@@ -24,7 +24,7 @@ flowchart TD
   linkStyle 5 stroke:red,stroke-width:2px,color:red;
 ```
 
-The runtime graph uses strict single-hop adjacency:
+The package graph uses strict single-hop adjacency:
 
 - `web` -> `ui`
 - `ui` -> `(none)`
@@ -33,15 +33,19 @@ The runtime graph uses strict single-hop adjacency:
 - `db` -> `config`
 - `config` -> `(none)`
 
-Reaching past the next layer is forbidden. The shared tooling config packages, `eslint-config`, `typescript-config`, `vitest-config`, and `eslint-plugin`, are exempt because they are dev infrastructure, not runtime flow.
+Reaching past the next layer is forbidden. The shared tooling config packages, `eslint-config`, `typescript-config`, `vitest-config`, and `eslint-plugin`, are exempt because they are dev infrastructure, not part of the governed package graph.
 
 ## How it works
 
 The rule is published from `@forgekit/eslint-plugin` under the rule name `dependency-flow`.
 
-For each linted file, it determines the owning package from the file's `packages/<name>` or `apps/<name>` path. For every `@forgekit` import or re-export, it extracts the target package and checks it against the owning package's allowed set.
+For each linted file, it determines the owning package from the file's `packages/<name>` or `apps/<name>` path. For every `@forgekit` static import, re-export, or dynamic `import()` with a string-literal specifier, it extracts the target package and checks it against the owning package's allowed set. A dynamic import whose specifier is not a string literal cannot be resolved statically and is not checked.
 
 Tooling packages and imports outside the `@forgekit` scope are ignored. A forbidden governed import is reported.
+
+## Type-only imports are governed too
+
+`import type { X } from "@forgekit/db"` is erased at build time, so it adds no runtime edge. The rule still reports it when it crosses a forbidden boundary, and that is deliberate: a type-only import still couples the two packages to each other's shapes, which is the coupling this boundary exists to prevent. If a package needs a type from a non-adjacent layer, re-export that type through the allowed layer, for example expose it from `core` and import it from `@forgekit/core`.
 
 ## When it fires
 

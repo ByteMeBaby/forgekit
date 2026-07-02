@@ -25,6 +25,7 @@
     "@forgekit/typescript-config": "workspace:*",
     "@forgekit/vitest-config": "workspace:*",
     "@types/estree": "^1.0.8",
+    "@types/node": "^26.1.0",
     "eslint": "^9.30.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
