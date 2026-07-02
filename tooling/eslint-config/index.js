@@ -26,7 +26,7 @@ export const forgekitEslintConfig = defineConfig(
       "@forgekit/dependency-flow": "error",
       // Raw client-IP header reads are spoofable, so force the canonical helper.
       "@forgekit/no-raw-client-ip-header": "error",
-      // Unscoped deletes wipe whole tables, so they are a test-isolation and data-loss guard.
+      // Missing `.where()` on Drizzle deletes can wipe tables, so nudge server code toward scoped deletes.
       "@forgekit/no-unscoped-db-delete": "error"
     }
   }

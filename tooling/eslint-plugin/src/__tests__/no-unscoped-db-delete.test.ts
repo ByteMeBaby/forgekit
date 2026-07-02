@@ -71,8 +71,23 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: 'db.delete("keyval")'
     },
     {
-      name: "app file db delete is outside the rule surface",
+      name: "always-true filter is not caught (known gap)",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.delete(users).where(sql`1=1`)"
+    },
+    {
+      name: "aliased handle is not caught (known gap)",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "const d = db; d.delete(users);"
+    },
+    {
+      name: "apps/web db delete is outside the rule surface",
       filename: "/repo/apps/web/src/idb.ts",
+      code: "db.delete(users)"
+    },
+    {
+      name: "test file db delete is outside the rule surface",
+      filename: "/repo/packages/db/src/__tests__/repo.test.ts",
       code: "db.delete(users)"
     }
   ],
@@ -141,6 +156,16 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       name: "this db delete is reported",
       filename: "/repo/packages/core/src/service.ts",
       code: "this.db.delete(users)",
+      errors: [
+        {
+          messageId: "unscopedDelete"
+        }
+      ]
+    },
+    {
+      name: "unscoped delete in apps/api is caught",
+      filename: "/repo/apps/api/src/x.ts",
+      code: "db.delete(users)",
       errors: [
         {
           messageId: "unscopedDelete"
