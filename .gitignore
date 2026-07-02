@@ -1,0 +1,11 @@
+.claude/skills/codex/SKILL.md
+
+plan
+node_modules
+dist
+.turbo
+coverage
+playwright-report
+test-results
+*.log
+.DS_Store
