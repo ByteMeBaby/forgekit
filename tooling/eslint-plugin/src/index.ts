@@ -3,13 +3,15 @@
 import type { Rule } from "eslint";
 
 import { dependencyFlowRule } from "./rules/dependency-flow.js";
+import { noUnscopedDbDeleteRule } from "./rules/no-unscoped-db-delete.js";
 
-/** Rule-name to implementation map. The key is the name used in ESLint config as `<namespace>/dependency-flow`. */
+/** Rule-name to implementation map. Each key is used in ESLint config as `<namespace>/<rule-name>`. */
 export const rules = {
-  "dependency-flow": dependencyFlowRule
+  "dependency-flow": dependencyFlowRule,
+  "no-unscoped-db-delete": noUnscopedDbDeleteRule
 } satisfies Record<string, Rule.RuleModule>;
 
-/** Flat-config plugin object. Register it under a namespace, then enable a rule by `<namespace>/dependency-flow`. */
+/** Flat-config plugin object. Register it under a namespace, then enable rules by `<namespace>/<rule-name>`. */
 export const forgekitEslintPlugin = {
   rules
 };

@@ -23,7 +23,9 @@ export const forgekitEslintConfig = defineConfig(
       // no-explicit-any is an error because the skeleton should fail fast when a public or internal type loses shape.
       "@typescript-eslint/no-explicit-any": "error",
       // Cross-package runtime imports must follow the declared single-hop graph.
-      "@forgekit/dependency-flow": "error"
+      "@forgekit/dependency-flow": "error",
+      // Unscoped deletes wipe whole tables, so they are a test-isolation and data-loss guard.
+      "@forgekit/no-unscoped-db-delete": "error"
     }
   }
 );
