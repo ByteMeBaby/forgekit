@@ -24,6 +24,8 @@ export const forgekitEslintConfig = defineConfig(
       "@typescript-eslint/no-explicit-any": "error",
       // Cross-package runtime imports must follow the declared single-hop graph.
       "@forgekit/dependency-flow": "error",
+      // Raw client-IP header reads are spoofable, so force the canonical helper.
+      "@forgekit/no-raw-client-ip-header": "error",
       // Unscoped deletes wipe whole tables, so they are a test-isolation and data-loss guard.
       "@forgekit/no-unscoped-db-delete": "error"
     }
