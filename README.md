@@ -41,4 +41,13 @@ pnpm test
 
 The workspace uses strict TypeScript with `noUncheckedIndexedAccess`. ESLint rejects explicit `any`.
 
+## Development notes
+
+A pre-push git hook runs the four gates (`build`, `lint`, `typecheck`, `test`) and blocks a push that fails any of them. It is installed on `pnpm install` by a `prepare` script that points git at the committed `.githooks` directory. Bypass it in a genuine emergency with `git push --no-verify`.
+
+Two Turborepo behaviors to know:
+
+- Turbo caches `build`, `test`, and `lint` results by input hash, so a green run may have been served from cache rather than actually run. Force a real run with `TURBO_FORCE=true pnpm test`.
+- Internal packages are consumed as their built `dist/`, not their source. Running the gates through Turbo rebuilds dependencies in order, but a direct per-package command such as `pnpm --filter @forgekit/api test` can read a stale `dist/`. Rebuild first, or run through Turbo.
+
 A collaboration between a human and an AI 👨 ❤️ 🤖

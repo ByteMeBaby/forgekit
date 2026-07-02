@@ -6,6 +6,7 @@
       "outputs": ["dist/**"]
     },
     "lint": {
+      "dependsOn": ["@forgekit/eslint-plugin#build", "^build"],
       "outputs": []
     },
     "typecheck": {
