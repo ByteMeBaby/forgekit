@@ -24,7 +24,7 @@ export const forgekitEslintConfig = defineConfig(
       "@typescript-eslint/no-explicit-any": "error",
       // Cross-package runtime imports must follow the declared single-hop graph.
       "@forgekit/dependency-flow": "error",
-      // Unscoped deletes wipe whole tables, so they are a test-isolation and data-loss guard.
+      // Missing `.where()` on Drizzle deletes can wipe tables, so nudge server code toward scoped deletes.
       "@forgekit/no-unscoped-db-delete": "error"
     }
   }

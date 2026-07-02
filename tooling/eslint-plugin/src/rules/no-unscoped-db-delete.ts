@@ -1,10 +1,11 @@
 /**
- * Guards ForgeKit's Drizzle delete calls from deleting whole tables by requiring
- * an immediately invoked `.where(...)` scope on every recognized `db.delete(table)`.
+ * Syntax-level nudge against accidental missing `.where(...)` filters on
+ * recognized Drizzle `delete(table)` calls in packages/db, packages/core, and
+ * apps/api.
  *
- * The rule is intentionally syntax-based and package-scoped. That keeps it fast
- * and avoids flagging unrelated browser storage or cache handles named `db` in
- * packages that cannot import the Drizzle handle.
+ * Row-level security is the real cross-org guard. This rule only checks syntax:
+ * an always-true filter and an aliased handle are known bypasses documented in
+ * the rule guide.
  */
 import type { Rule } from "eslint";
 import type {
@@ -23,20 +24,32 @@ type ParentReference = {
 
 type ParentedSimpleCallExpression = SimpleCallExpression & ParentReference;
 
-const drizzleSurfaceFilePattern = /(?:^|\/)packages\/(?:db|core)\//u;
+const drizzleSurfaceFilePattern = /(?:^|\/)(?:packages\/(?:db|core)|apps\/api)\//u;
 const dbHandleNamePattern = /Db$|DB$/u;
 
+function normalizeFilename(filename: string): string {
+  return filename.replaceAll("\\", "/");
+}
+
+function isTestFile(filename: string): boolean {
+  return (
+    filename.includes("/__tests__/") || filename.endsWith(".test.ts") || filename.endsWith(".spec.ts")
+  );
+}
+
 /**
- * Returns true for files in packages that may legitimately hold a Drizzle db handle.
+ * Returns true for server files where a conventional Drizzle handle may appear.
  *
- * The package gate relies on the dependency-flow rule's runtime graph guarantee:
- * only packages/db and packages/core may import @forgekit/db, so other app and
- * package code can safely use names like `db` for unrelated clients.
+ * This package gate is a false-positive-avoidance choice, not a guarantee that
+ * every unscoped delete is caught. dependency-flow stops other runtime packages
+ * from importing @forgekit/db directly, so a `db`-named handle in browser or
+ * tooling code is usually unrelated. packages/core can still re-export the
+ * handle into apps/api, and aliases are invisible to this syntax rule.
  */
 function isDrizzleSurfaceFile(filename: string): boolean {
-  const normalizedFilename = filename.replaceAll("\\", "/");
+  const normalizedFilename = normalizeFilename(filename);
 
-  return drizzleSurfaceFilePattern.test(normalizedFilename);
+  return drizzleSurfaceFilePattern.test(normalizedFilename) && !isTestFile(normalizedFilename);
 }
 
 /**
@@ -163,12 +176,12 @@ export const noUnscopedDbDeleteRule: Rule.RuleModule = {
     schema: [],
     messages: {
       unscopedDelete:
-        "`{{name}}.delete(...)` has no `.where(...)` scope, so it deletes every row in the table. Narrow it to the caller's rows, for example `.where(eq(table.orgId, orgId))`. If deleting all rows is truly intended, allow it explicitly with `// eslint-disable-next-line @forgekit/no-unscoped-db-delete -- <reason>`."
+        "`{{name}}.delete(...)` has no `.where(...)` filter and would delete every row. Scope it to the caller's rows, for example `.where(eq(table.orgId, orgId))`. This is a syntax-level nudge, not a guarantee (an always-true filter or an aliased handle still slips through), and row-level security is the real cross-org guard. If an unfiltered delete is intended, allow it with `// eslint-disable-next-line @forgekit/no-unscoped-db-delete -- <reason>`."
     }
   },
   create(context: Rule.RuleContext): Rule.RuleListener {
-    // Package scoping removes the false-positive class from browser and app code.
-    // dependency-flow guarantees only db and core can reach the Drizzle surface.
+    // Scope the rule to server surfaces where a conventional Drizzle handle may
+    // appear while avoiding browser, tooling, and test false positives.
     if (!isDrizzleSurfaceFile(context.filename)) {
       return {};
     }

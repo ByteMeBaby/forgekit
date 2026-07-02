@@ -1,12 +1,14 @@
 # No Unscoped DB Delete ESLint Rule
 
-`no-unscoped-db-delete` is a custom ESLint rule in `@forgekit/eslint-plugin` that fails the build on an unscoped Drizzle delete.
+`no-unscoped-db-delete` is a custom ESLint rule in `@forgekit/eslint-plugin` that reports recognized Drizzle delete calls missing an immediate `.where(...)`.
 
 ## Why
 
 In Drizzle, `db.delete(table)` deletes every row in the table unless the delete builder is narrowed with `.where(...)`.
 
-That is dangerous in production code and in tests. A missed scope can remove another organization's rows, erase shared test state, or make test isolation depend on execution order. The rule makes scoped deletes a build-enforced habit instead of a convention.
+This rule is a syntax-level nudge against the accidental missing-`.where()`; row-level security is the real guard against cross-org deletes.
+
+A missed scope can erase shared state. The rule makes scoped deletes a build-enforced habit instead of a convention, while staying honest that syntax alone cannot prove the predicate is meaningful.
 
 ## How it works
 
@@ -30,7 +32,7 @@ The decision in one picture:
 
 ```mermaid
 flowchart TD
-  start["A call in packages/db or packages/core"] --> isDelete{"a .delete call on db, tx, or a name ending in Db?"}
+  start["A call in packages/db, packages/core, or apps/api"] --> isDelete{"a .delete call on db, tx, or a name ending in Db?"}
   isDelete -->|no| ignore1["Ignore"]
   isDelete -->|yes| oneArg{"exactly one non-text argument?"}
   oneArg -->|no| ignore2["Ignore: key-value client, not a table"]
@@ -41,13 +43,13 @@ flowchart TD
 
 ## Where it applies
 
-The rule runs only inside `packages/db` and `packages/core`.
+The rule runs only inside `packages/db`, `packages/core`, and `apps/api` server code that may hold a Drizzle handle. It does not run in `apps/web`, `tooling`, or tests.
 
-That scope is intentional. The `dependency-flow` rule guarantees that no other runtime package imports the Drizzle handle from `@forgekit/db`, so app and browser code can safely use names like `db` for IndexedDB, caches, or other clients without this rule guessing wrong.
+That scope is a false-positive-avoidance choice, not a guarantee that every unscoped delete is caught. The `dependency-flow` rule stops other runtime packages from importing `@forgekit/db` directly, so a `db`-named handle in browser or tooling code is usually unrelated. `packages/core` can still re-export the handle across the allowed `api -> core` edge, and the handle can be aliased.
 
 ## When it fires
 
-This delete from `packages/db` or `packages/core` is forbidden:
+This delete from `packages/db`, `packages/core`, or `apps/api` server code is forbidden:
 
 ```ts
 await db.delete(users);
@@ -75,6 +77,22 @@ A legitimate delete-all belongs behind that explicit comment so reviewers can se
 ## Known gaps
 
 This rule reads the shape of the code, not its types or runtime values. That keeps it fast and simple, and it is honest about the cases that shape alone cannot catch. Each gap below is a direct consequence.
+
+### Always-true filter (passes, but is unsafe)
+
+```ts
+db.delete(users).where(sql`1=1`);
+```
+
+This passes because the rule checks that a `.where()` exists, not that the predicate is meaningful.
+
+### Aliased handle (passes, but is unsafe)
+
+```ts
+const d = db; d.delete(users);
+```
+
+This passes because the receiver name (`d`) is not `db`, `tx`, or a name ending in `Db` or `DB`.
 
 ### Split or `$dynamic()` builder (reported even though it is fine)
 
