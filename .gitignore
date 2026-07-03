@@ -9,3 +9,8 @@ playwright-report
 test-results
 *.log
 .DS_Store
+
+# Local env files. Real secrets never get committed; .env.example is the tracked template.
+.env
+.env.local
+.env.*.local
