@@ -10,7 +10,7 @@ import tseslint from "typescript-eslint";
  */
 export const forgekitEslintConfig = defineConfig(
   {
-    ignores: ["dist/**", "coverage/**", "node_modules/**"]
+    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**"]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
