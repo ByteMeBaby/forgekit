@@ -1,6 +1,6 @@
 # ForgeKit
 
-ForgeKit is a pnpm and Turborepo workspace.
+ForgeKit is a starter kit for SaaS web applications.
 
 ## Layout
 
