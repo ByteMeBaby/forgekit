@@ -1,11 +1,12 @@
 /**
  * Syntax-level nudge against accidental missing `.where(...)` filters on
- * recognized Drizzle `delete(table)` calls in packages/db, packages/core, and
- * apps/api.
+ * recognized Drizzle `delete(table)` and `update(table).set(...)` calls in
+ * packages/db, packages/core, and apps/api. Browser, tooling, and test files
+ * are outside this rule surface.
  *
  * Row-level security is the real cross-org guard. This rule only checks syntax:
- * an always-true filter and an aliased handle are known bypasses documented in
- * the rule guide.
+ * an always-true filter, aliased handle, split builder, and raw SQL are known
+ * bypasses documented in the rule guide.
  */
 import type { Rule } from "eslint";
 import type {
@@ -23,6 +24,8 @@ type ParentReference = {
 };
 
 type ParentedSimpleCallExpression = SimpleCallExpression & ParentReference;
+type MutationMethod = "delete" | "update";
+type MutationMemberExpression = MemberExpression & { property: Identifier & { name: MutationMethod } };
 
 const drizzleSurfaceFilePattern = /(?:^|\/)(?:packages\/(?:db|core)|apps\/api)\//u;
 const dbHandleNamePattern = /Db$|DB$/u;
@@ -61,22 +64,24 @@ function isIdentifier(node: Expression | PrivateIdentifier | Super): node is Ide
 }
 
 /**
- * Determines whether a call callee is the direct `.delete` member being audited.
+ * Determines whether a call callee is the direct mutation member being audited.
  */
-function isDeleteMemberCallee(
-  callee: Expression | Super
-): callee is MemberExpression & { property: Identifier } {
+function isMutationMemberCallee(callee: Expression | Super): callee is MutationMemberExpression {
   return (
     callee.type === "MemberExpression" &&
     !callee.computed &&
     isIdentifier(callee.property) &&
-    callee.property.name === "delete"
+    isMutationMethod(callee.property.name)
   );
+}
+
+function isMutationMethod(name: string): name is MutationMethod {
+  return name === "delete" || name === "update";
 }
 
 /**
  * Extracts the conventional db handle name from `db.delete(...)`, `this.db.delete(...)`,
- * and `ctx.db.delete(...)` while ignoring more complex receiver expressions.
+ * `ctx.db.update(...)`, and similar calls while ignoring more complex receiver expressions.
  */
 function getReceiverName(member: MemberExpression): string | null {
   if (member.object.type === "Identifier") {
@@ -107,11 +112,12 @@ function isDbHandleName(name: string): boolean {
 }
 
 /**
- * Returns true when the delete call shape looks like Drizzle's `delete(table)`.
+ * Returns true when the call shape looks like Drizzle's `delete(table)` or
+ * `update(table)`.
  */
 function hasSingleTableArgument(node: SimpleCallExpression): boolean {
-  // Drizzle table deletes take one table argument. Requiring that shape avoids
-  // false positives from key-value clients such as `db.delete("store", key)`.
+  // Drizzle table deletes and updates take one table argument. Requiring that
+  // shape avoids false positives from key-value clients such as `db.delete("store", key)`.
   if (node.arguments.length !== 1) {
     return false;
   }
@@ -122,13 +128,13 @@ function hasSingleTableArgument(node: SimpleCallExpression): boolean {
     return false;
   }
 
-  return !isLiteralKeyDeleteArgument(argument);
+  return !isLiteralKeyMutationArgument(argument);
 }
 
 /**
- * Recognizes literal key-value delete arguments that are not Drizzle table objects.
+ * Recognizes literal key-value arguments that are not Drizzle table objects.
  */
-function isLiteralKeyDeleteArgument(argument: Expression | SpreadElement): boolean {
+function isLiteralKeyMutationArgument(argument: Expression | SpreadElement): boolean {
   return (
     (argument.type === "Literal" &&
       (typeof argument.value === "string" || typeof argument.value === "number")) ||
@@ -137,46 +143,62 @@ function isLiteralKeyDeleteArgument(argument: Expression | SpreadElement): boole
 }
 
 /**
- * Returns true only when the delete call is immediately followed by an invoked
+ * Returns true when the mutation call's fluent chain includes an invoked
  * `.where(...)` member call.
  */
-function isImmediatelyScopedByWhere(node: ParentedSimpleCallExpression): boolean {
-  const whereMember = node.parent;
+function isScopedByWhereInChain(node: ParentedSimpleCallExpression): boolean {
+  let current: Rule.Node = node;
 
-  // A delete is scoped only by an invoked `.where(...)` directly on the builder.
-  // Later chained calls after `.where(...)` stay valid because this checks the
-  // delete call's immediate parent, not the end of the whole chain.
-  if (
-    whereMember.type !== "MemberExpression" ||
-    whereMember.computed ||
-    whereMember.object !== node ||
-    !isIdentifier(whereMember.property) ||
-    whereMember.property.name !== "where"
-  ) {
-    return false;
+  // Updates put `.set(...)` between `update(table)` and `.where(...)`, so the
+  // scope check must walk invoked fluent calls instead of checking one parent.
+  while (true) {
+    const member = getParentNode(current);
+
+    if (
+      member === null ||
+      member.type !== "MemberExpression" ||
+      member.computed ||
+      member.object !== current ||
+      !isIdentifier(member.property)
+    ) {
+      return false;
+    }
+
+    const call = getParentNode(member);
+
+    if (call === null || call.type !== "CallExpression" || call.callee !== member) {
+      return false;
+    }
+
+    if (member.property.name === "where") {
+      return true;
+    }
+
+    current = call;
   }
+}
 
-  const whereCall = whereMember.parent;
+function getParentNode(node: Rule.Node): Rule.Node | null {
+  const parentedNode = node as Rule.Node & Partial<ParentReference>;
 
-  // A bare `.where` property access is not a query scope. Requiring the member
-  // to be the callee of a call expression proves Drizzle receives the condition.
-  return whereCall.type === "CallExpression" && whereCall.callee === whereMember;
+  return parentedNode.parent ?? null;
 }
 
 /**
- * Flags Drizzle `db.delete(table)` calls that are missing an immediate `.where(...)`.
+ * Flags Drizzle `db.delete(table)` and `db.update(table).set(...)` calls that
+ * are missing a `.where(...)` scope.
  */
-export const noUnscopedDbDeleteRule: Rule.RuleModule = {
+export const noUnscopedDbMutationRule: Rule.RuleModule = {
   meta: {
     type: "problem",
     docs: {
-      description: "disallow an unscoped db.delete(...) with no .where() clause",
-      url: "https://github.com/ByteMeBaby/forgekit/blob/main/docs/eslint-rules/no-unscoped-db-delete.md"
+      description: "disallow unscoped db.delete(...) and db.update(...) mutations with no .where() clause",
+      url: "https://github.com/ByteMeBaby/forgekit/blob/main/docs/eslint-rules/no-unscoped-db-mutation.md"
     },
     schema: [],
     messages: {
-      unscopedDelete:
-        "`{{name}}.delete(...)` has no `.where(...)` filter and would delete every row. Scope it to the caller's rows, for example `.where(eq(table.orgId, orgId))`. This is a syntax-level nudge, not a guarantee (an always-true filter or an aliased handle still slips through), and row-level security is the real cross-org guard. If an unfiltered delete is intended, allow it with `// eslint-disable-next-line @forgekit/no-unscoped-db-delete -- <reason>`."
+      unscopedMutation:
+        "`{{name}}.{{method}}(...)` has no `.where(...)` filter, so it affects every row. Scope it to the caller's rows, for example `.where(eq(table.orgId, orgId))`. This is a syntax-level nudge, not a guarantee (an always-true filter or an aliased handle still slips through), and row-level security is the real cross-org guard. If an unfiltered {{method}} is intended, allow it with `// eslint-disable-next-line @forgekit/no-unscoped-db-mutation -- <reason>`."
     }
   },
   create(context: Rule.RuleContext): Rule.RuleListener {
@@ -188,25 +210,27 @@ export const noUnscopedDbDeleteRule: Rule.RuleModule = {
 
     return {
       CallExpression(node: ParentedSimpleCallExpression): void {
-        if (!isDeleteMemberCallee(node.callee)) {
+        if (!isMutationMemberCallee(node.callee)) {
           return;
         }
 
         const name = getReceiverName(node.callee);
+        const method = node.callee.property.name;
 
         if (name === null || !isDbHandleName(name) || !hasSingleTableArgument(node)) {
           return;
         }
 
-        if (isImmediatelyScopedByWhere(node)) {
+        if (isScopedByWhereInChain(node)) {
           return;
         }
 
         context.report({
           node,
-          messageId: "unscopedDelete",
+          messageId: "unscopedMutation",
           data: {
-            name
+            name,
+            method
           }
         });
       }

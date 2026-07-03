@@ -1,7 +1,7 @@
 import { RuleTester } from "eslint";
 import { afterAll, describe, it } from "vitest";
 
-import { noUnscopedDbDeleteRule } from "../rules/no-unscoped-db-delete.js";
+import { noUnscopedDbMutationRule } from "../rules/no-unscoped-db-mutation.js";
 
 type RuleTesterWithVitestHooks = typeof RuleTester & {
   afterAll?: typeof afterAll;
@@ -28,7 +28,7 @@ const ruleTester = new RuleTester({
   }
 });
 
-ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
+ruleTester.run("no-unscoped-db-mutation", noUnscopedDbMutationRule, {
   valid: [
     {
       name: "scoped db delete is allowed",
@@ -49,6 +49,26 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       name: "optional scoped db delete is allowed",
       filename: "/repo/packages/db/src/repo.ts",
       code: "db?.delete(users).where(eq(users.orgId, orgId))"
+    },
+    {
+      name: "scoped db update is allowed",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.update(users).set({ active: false }).where(eq(users.orgId, orgId))"
+    },
+    {
+      name: "awaited scoped db update is allowed",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "await db.update(users).set({ active: false }).where(eq(users.orgId, orgId))"
+    },
+    {
+      name: "chained returning after update where is allowed",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.update(users).set({ active: false }).where(eq(users.orgId, orgId)).returning()"
+    },
+    {
+      name: "optional scoped db update is allowed",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db?.update(users).set({ active: false }).where(eq(users.orgId, orgId))"
     },
     {
       name: "map delete is ignored",
@@ -76,9 +96,19 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "db.delete(users).where(sql`1=1`)"
     },
     {
+      name: "always-true update filter is not caught (known gap)",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.update(users).set({ active: false }).where(sql`1=1`)"
+    },
+    {
       name: "aliased handle is not caught (known gap)",
       filename: "/repo/packages/db/src/repo.ts",
       code: "const d = db; d.delete(users);"
+    },
+    {
+      name: "aliased update handle is not caught (known gap)",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "const d = db; d.update(users).set({ active: false });"
     },
     {
       name: "apps/web db delete is outside the rule surface",
@@ -98,7 +128,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "db.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -108,7 +138,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "await db.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -118,7 +148,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "db.delete(users).returning()",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -128,7 +158,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "db.delete(users).execute()",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -138,7 +168,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "tx.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -148,7 +178,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "appDb.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -158,7 +188,7 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "this.db.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
         }
       ]
     },
@@ -168,7 +198,57 @@ ruleTester.run("no-unscoped-db-delete", noUnscopedDbDeleteRule, {
       code: "db.delete(users)",
       errors: [
         {
-          messageId: "unscopedDelete"
+          messageId: "unscopedMutation"
+        }
+      ]
+    },
+    {
+      name: "plain db update is reported",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.update(users).set({ active: false })",
+      errors: [
+        {
+          messageId: "unscopedMutation"
+        }
+      ]
+    },
+    {
+      name: "awaited db update is reported",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "await db.update(users).set({ active: false })",
+      errors: [
+        {
+          messageId: "unscopedMutation"
+        }
+      ]
+    },
+    {
+      name: "update returning without where is reported",
+      filename: "/repo/packages/db/src/repo.ts",
+      code: "db.update(users).set({ active: false }).returning()",
+      errors: [
+        {
+          messageId: "unscopedMutation"
+        }
+      ]
+    },
+    {
+      name: "tx update is reported",
+      filename: "/repo/packages/core/src/service.ts",
+      code: "tx.update(users).set({ active: false })",
+      errors: [
+        {
+          messageId: "unscopedMutation"
+        }
+      ]
+    },
+    {
+      name: "unscoped update in apps/api is caught",
+      filename: "/repo/apps/api/src/x.ts",
+      code: "db.update(users).set({ active: false })",
+      errors: [
+        {
+          messageId: "unscopedMutation"
         }
       ]
     }
