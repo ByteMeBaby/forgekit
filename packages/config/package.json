@@ -20,6 +20,10 @@
   },
   "devDependencies": {
     "@forgekit/typescript-config": "workspace:*",
-    "@forgekit/vitest-config": "workspace:*"
+    "@forgekit/vitest-config": "workspace:*",
+    "@types/node": "^26.1.0"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }
