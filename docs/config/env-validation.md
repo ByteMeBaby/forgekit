@@ -32,13 +32,10 @@ Presence checks are separate from shape validation on purpose. The schema, throu
 
 `warnUsingMocks(names)` warns in production when a provider key is absent and the app fell back to an in-memory mock, so an operator sees that real traffic is hitting a fake backend. It is a no-op outside production.
 
-## Scope
+## `.env.example`
 
-This slice covers a representative subset of environment variables:
+`.env.example` at the repo root is the tracked template. Copy it to `.env` and adjust. It mirrors the variables the schema recognizes today and grows with the schema. Real env files (`.env`, `.env.local`, `.env.*.local`) are gitignored so secrets are never committed, and a fresh clone boots on the template defaults with nothing real set.
 
-- `NODE_ENV`
-- `APP_SHAPE`
-- `AUTH_SECRET`
-- `AUTH_REQUIRE_EMAIL_VERIFICATION`
+## Client versus server env
 
-The full variable catalog is added in the next slice.
+This schema validates server environment variables only. Browser-facing variables are `VITE_`-prefixed, read through the bundler at build time, and cannot import this server schema. They are declared on the web side when the web app reads them, and any value shared with the server (such as the app shape) is mirrored deliberately rather than imported.
