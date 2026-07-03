@@ -1,6 +1,10 @@
 # ForgeKit
 
-ForgeKit is a starter kit for SaaS web applications.
+ForgeKit is a starter kit for SaaS web applications. Even though this is an experiment I am doing with AI, I am planning to make it as useful as possible.
+
+The goal is to cover the parts every SaaS needs but nobody enjoys rebuilding: sign-in, organizations and teams, billing, and an audit trail. You clone it, set a few env values, and start on your actual product instead of a blank folder.
+
+It is early and I am building it one feature at a time, so treat it as a work in progress rather than something to ship today. I am trying to keep it honest about what is actually enforced versus what is just a convenience.
 
 ## Layout
 
