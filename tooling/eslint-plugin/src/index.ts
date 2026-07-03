@@ -3,12 +3,12 @@
 import type { Rule } from "eslint";
 
 import { dependencyFlowRule } from "./rules/dependency-flow.js";
-import { noUnscopedDbDeleteRule } from "./rules/no-unscoped-db-delete.js";
+import { noUnscopedDbMutationRule } from "./rules/no-unscoped-db-mutation.js";
 
 /** Rule-name to implementation map. Each key is used in ESLint config as `<namespace>/<rule-name>`. */
 export const rules = {
   "dependency-flow": dependencyFlowRule,
-  "no-unscoped-db-delete": noUnscopedDbDeleteRule
+  "no-unscoped-db-mutation": noUnscopedDbMutationRule
 } satisfies Record<string, Rule.RuleModule>;
 
 /** Flat-config plugin object. Register it under a namespace, then enable rules by `<namespace>/<rule-name>`. */
