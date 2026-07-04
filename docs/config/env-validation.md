@@ -39,3 +39,8 @@ Presence checks are separate from shape validation on purpose. The schema, throu
 ## Client versus server env
 
 This schema validates server environment variables only. Browser-facing variables are `VITE_`-prefixed, read through the bundler at build time, and cannot import this server schema. They are declared on the web side when the web app reads them, and any value shared with the server (such as the app shape) is mirrored deliberately rather than imported.
+
+## References
+
+- [Zod](https://zod.dev) - the schema library `parseEnv` is built on.
+- [Vite: Env Variables and Modes](https://vite.dev/guide/env-and-mode) - how the browser reads `VITE_`-prefixed variables at build time.

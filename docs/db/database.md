@@ -75,10 +75,42 @@ A [UUIDv7](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7) puts a times
 
 Table definitions and the migrations that create them live with the features that own them.
 
+## Local database and migrations
+
+Start the development database with [Docker Compose](https://docs.docker.com/compose/):
+
+```sh
+docker compose up -d db
+```
+
+The local service listens on host port `5433` because port `5432` may already be used by another Postgres. It uses trust auth so the derived per-role development logins can connect without passwords. This is for development only and must never be used in production.
+
+Use this URL for the Compose database:
+
+```sh
+DATABASE_URL=postgres://postgres@localhost:5433/forgekit
+```
+
+The `@forgekit/db` package owns the migration lifecycle scripts:
+
+```sh
+pnpm --filter @forgekit/db run db:generate
+pnpm --filter @forgekit/db run db:migrate
+pnpm --filter @forgekit/db run db:reset
+pnpm --filter @forgekit/db run db:test-reset
+```
+
+`db:generate` asks drizzle-kit to create migration files from schema changes. `db:migrate` applies pending migrations using `DATABASE_URL`. `db:reset` reads `DATABASE_URL`, connects to the `postgres` maintenance database, drops and recreates the target database, then runs migrations and the seed step. `db:test-reset` uses the same reset script for whichever test database is named by `DATABASE_URL`.
+
+The first migration creates `forgekit_owner`, `forgekit_app`, and `forgekit_operator` with [`CREATE ROLE`](https://www.postgresql.org/docs/current/sql-createrole.html). It is idempotent because Postgres roles are cluster-global and survive a database drop.
+
+The role integration tests are gated. They are skipped unless `DATABASE_URL` is set, so a fresh clone can run `pnpm test` without a local database.
+
 ## References
 
 - [Postgres: Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - how RLS filters rows per policy.
 - [Postgres: CREATE ROLE](https://www.postgresql.org/docs/current/sql-createrole.html) - the role attributes, including `BYPASSRLS` and `SUPERUSER`.
+- [Docker Compose](https://docs.docker.com/compose/) - running the local development database service.
 - [RFC 9562, Section 5.7: UUID Version 7](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7) - the UUIDv7 spec.
 - [Drizzle ORM](https://orm.drizzle.team/docs/overview) - the query builder `createDb` returns.
 - [node-postgres: Pooling](https://node-postgres.com/features/pooling) - the `pg` connection pool.

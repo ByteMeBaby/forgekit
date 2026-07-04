@@ -6,7 +6,7 @@
 
 ForgeKit uses a layered monorepo architecture where each package may depend only on the next layer down: `web` on `ui`, and `api` on `core` on `db` on `config`.
 
-This keeps the dependency graph acyclic, concerns separated, and packages independently reasonable and extractable. Without enforcement, it is easy to accidentally add a forbidden edge, such as an app reaching past its layer or `ui` reaching into `db`. Those edges create hidden coupling and erode the architecture.
+This keeps the dependency graph acyclic (no import cycles), concerns separated, and packages independently reasonable and extractable. Without enforcement, it is easy to accidentally add a forbidden edge, such as an app reaching past its layer or `ui` reaching into `db`. Those edges create hidden coupling and erode the architecture.
 
 Enforcing the boundary as a build-failing lint rule makes it a hard constraint caught in the pull request, not a convention people forget.
 
@@ -74,3 +74,8 @@ The rule is enabled as an error in the shared flat ESLint config, so `pnpm lint`
 ## Adding more rules
 
 The plugin is structured to hold more rules. Add a rule under the plugin's rules map and document it in `docs/eslint-rules/`.
+
+## References
+
+- [ESLint: Custom Rules](https://eslint.org/docs/latest/extend/custom-rules) - how a rule like this is written.
+- [ESLint: Configuration Files](https://eslint.org/docs/latest/use/configure/configuration-files) - the flat config the rule is wired into.

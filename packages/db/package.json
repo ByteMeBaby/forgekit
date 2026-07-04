@@ -16,6 +16,10 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:reset": "tsx src/scripts/reset.ts",
+    "db:test-reset": "tsx src/scripts/reset.ts",
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
     "test": "vitest run"
@@ -30,6 +34,8 @@
     "@forgekit/typescript-config": "workspace:*",
     "@forgekit/vitest-config": "workspace:*",
     "@types/node": "^26.1.0",
-    "@types/pg": "^8.20.0"
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.0"
   }
 }

@@ -6,7 +6,7 @@
 
 In Drizzle, `db.delete(table)` deletes every row in the table unless the delete builder is narrowed with `.where(...)`. Likewise, `db.update(table).set(values)` overwrites every row unless the update builder is narrowed with `.where(...)`.
 
-This rule is a syntax-level nudge against accidental missing-`.where()` mutations. Row-level security is the real guard against cross-org writes.
+This rule is a syntax-level nudge against accidental missing-`.where()` mutations. [Row-Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) is the real guard against cross-org writes.
 
 A missed scope can erase or overwrite shared state. The rule makes scoped mutations a build-enforced habit instead of a convention, while staying honest that syntax alone cannot prove the predicate is meaningful.
 
@@ -158,3 +158,9 @@ The rule never runs the code, so it cannot know the value passed in is empty.
 The rule is syntax-based: it matches the shape of the code (a `.delete` or `.update` call on a `db`-like name, one non-text argument, no `.where()` in the fluent chain) and never asks the TypeScript compiler what anything actually is. That is why it leans on the receiver being named `db`, `tx`, or ending in `Db`.
 
 A stronger, type-aware version could ask the compiler whether the type of the receiver comes from `drizzle-orm`, which would identify a real Drizzle handle no matter what it is named and never flag a lookalike. We do not do that yet because type-aware linting makes every run type-check the whole project (slower) and needs more test setup, and there are no delete or update sites in the codebase to get wrong. If a real miss ever appears, that is the signal to make the switch. A type-aware check would only settle the "is this really a Drizzle handle" question; it would not close the split-builder, raw-SQL, or `.where(undefined)` gaps above, which are beyond static analysis.
+
+## References
+
+- [Drizzle ORM: Delete](https://orm.drizzle.team/docs/delete) and [Update](https://orm.drizzle.team/docs/update) - the `.delete()`, `.update()`, and `.where()` builders this rule inspects.
+- [Postgres: Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - the real cross-org write guard this rule only nudges toward.
+- [ESLint: Custom Rules](https://eslint.org/docs/latest/extend/custom-rules) - how a rule like this is written.
