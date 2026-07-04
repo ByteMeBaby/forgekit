@@ -7,6 +7,10 @@ const booleanFlag = z.enum(["true", "false"]).transform((value) => value === "tr
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   APP_SHAPE: z.enum(["personal", "personal_and_org", "org"]).default("personal_and_org"),
+  // Database. The app and operator role URLs derive from DATABASE_URL by role swap when unset.
+  DATABASE_URL: z.string().optional(),
+  APP_DATABASE_URL: z.string().optional(),
+  OPERATOR_DATABASE_URL: z.string().optional(),
   AUTH_SECRET: z.string().min(32).optional(),
   AUTH_REQUIRE_EMAIL_VERIFICATION: booleanFlag.optional(),
 });

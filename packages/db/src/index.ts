@@ -5,3 +5,7 @@ import { FORGEKIT_VERSION } from "@forgekit/config";
  * making turbo dependsOn ordering and dist-consumption real rather than assumed.
  */
 export const DB_VERSION = `db:${FORGEKIT_VERSION}`;
+
+export { createDb, type DbHandle } from "./client.js";
+export { uuidv7 } from "./ids.js";
+export { APP_ROLE, OPERATOR_ROLE, OWNER_ROLE, deriveRoleUrl, resolveDatabaseUrls } from "./roles.js";
