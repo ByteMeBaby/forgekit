@@ -8,6 +8,13 @@
       "when": 1783155711477,
       "tag": "0000_create_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783168591773,
+      "tag": "0001_example_records_tenant_isolation",
+      "breakpoints": true
     }
   ]
 }

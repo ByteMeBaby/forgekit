@@ -13,13 +13,35 @@ The mechanism is three separate Postgres logins, called roles, each with a diffe
 Think of them by who connects as each one and what it is allowed to see.
 
 **`forgekit_app` — normal user traffic.**
-When a signed-in user loads their dashboard, the request connects to Postgres as `forgekit_app`. This role is deliberately weak: it is not a superuser and does not have [`BYPASSRLS`](https://www.postgresql.org/docs/current/sql-createrole.html), so [Row-Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) (RLS) policies apply to it. Those policies scope every query to the current organization automatically. Once they are in place, a handler that forgets its `WHERE org_id = ...` still gets back only the current org's rows, because Postgres itself filters them. This is the role that turns tenant isolation from a coding convention into a database guarantee.
+When a signed-in user loads their dashboard, the request connects to Postgres as `forgekit_app`. This role is deliberately weak: it is not a superuser and does not have [`BYPASSRLS`](https://www.postgresql.org/docs/current/sql-createrole.html), so [Row-Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) (RLS) policies apply to it. Those policies scope every query to the current organization automatically: a handler that forgets its `WHERE org_id = ...` still gets back only the current org's rows, because Postgres itself filters them. The reference table `example_records` carries this policy, and the isolation tests prove it; every real tenant table adopts the same pattern. This is the role that turns tenant isolation from a coding convention into a database guarantee.
 
 **`forgekit_operator` — admin and background jobs.**
 Some work legitimately spans every tenant: an admin console that lists all organizations, or a nightly job that cleans up expired sessions across the whole system. That work connects as `forgekit_operator`, which has `BYPASSRLS`, so the per-org policies do not apply and it can read across tenants on purpose. It is used only for these cross-tenant surfaces, never for ordinary user requests.
 
 **`forgekit_owner` — schema changes.**
 This role owns the tables and runs migrations (creating tables, adding columns). The migration tooling uses it; it is not used while serving traffic.
+
+## How it fits together
+
+The role picks what a connection may see; the org scope picks which org's rows.
+
+```mermaid
+flowchart TD
+  code["Feature code decides the operation"]
+  code --> choice{"Tenant-scoped or cross-tenant?"}
+
+  choice -->|"tenant request"| appPool["App pool<br/>role forgekit_app<br/>NOSUPERUSER, RLS applies"]
+  choice -->|"admin or background job"| opPool["Operator pool<br/>role forgekit_operator<br/>BYPASSRLS"]
+
+  orgCtx["Server-derived org id<br/>membership, API key, or webhook<br/>never user input"]
+  orgCtx --> scope
+
+  appPool --> scope["withOrgScope binds app.current_org_id<br/>inside a transaction"]
+  scope --> policy["tenant_isolation policy checks<br/>org_id equals app.current_org_id"]
+  policy --> onlyOrg["Reads and writes rows for that one org"]
+
+  opPool --> allOrgs["Reads and writes rows for every org<br/>policy bypassed"]
+```
 
 ## Connection URLs
 
@@ -82,6 +104,34 @@ The code uses `set_config('app.current_org_id', orgId, true)` instead of `SET LO
 
 `withScopedDb` and `getScopedDb` propagate the active handle through Node's `AsyncLocalStorage`, so service code resolves the transaction at query time. The fallback passed to `getScopedDb` must be the app-role pool. If a query runs with no scope active, it should fail closed under RLS instead of reading across tenants.
 
+## Tenant isolation policy
+
+Every tenant table follows the same pattern: it carries `org_id text not null` and a `tenant_isolation` policy. The `USING` clause governs reads, updates, and deletes. The `WITH CHECK` clause governs inserts and updates. Both require the row's `org_id` to equal `current_setting('app.current_org_id', true)`.
+
+`FORCE ROW LEVEL SECURITY` keeps the policy active even for the table owner. With no org bound, `current_setting('app.current_org_id', true)` returns null, so the comparison matches no row. An unscoped app query returns zero rows rather than another org's data.
+
+`example_records` is the reference table that carries this pattern, and the isolation tests exercise the scoped app role, refused cross-org writes, operator access, and the unscoped fail-closed case.
+
+```sql
+CREATE TABLE example_records (
+  id text PRIMARY KEY,
+  org_id text NOT NULL,
+  body text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX example_records_org_id_idx ON example_records (org_id);
+
+ALTER TABLE example_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE example_records FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON example_records
+  USING (org_id = current_setting('app.current_org_id', true))
+  WITH CHECK (org_id = current_setting('app.current_org_id', true));
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON example_records TO forgekit_app, forgekit_operator;
+```
+
 ## IDs
 
 `uuidv7()` generates the text primary key for every row:
@@ -128,6 +178,7 @@ The role integration tests are gated. They are skipped unless `DATABASE_URL` is 
 ## References
 
 - [Postgres: Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) - how RLS filters rows per policy.
+- [Postgres: CREATE POLICY](https://www.postgresql.org/docs/current/sql-createpolicy.html) - creating row security policies.
 - [Postgres: CREATE ROLE](https://www.postgresql.org/docs/current/sql-createrole.html) - the role attributes, including `BYPASSRLS` and `SUPERUSER`.
 - [Docker Compose](https://docs.docker.com/compose/) - running the local development database service.
 - [RFC 9562, Section 5.7: UUID Version 7](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7) - the UUIDv7 spec.
