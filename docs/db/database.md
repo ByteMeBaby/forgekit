@@ -63,6 +63,25 @@ await close();
 
 Building the handle does not connect to Postgres. The pool opens a real connection only when the first query runs, not when the handle is created (this is what "lazily" means). That is why constructing it is safe even with no database running, and why application code should build a handle only once a real database URL has been resolved.
 
+## Request scoping and RLS context
+
+RLS policies need to know which organization is active for the current request. ForgeKit carries that value in the Postgres setting `app.current_org_id`.
+
+`withOrgScope(appDb, orgId, fn)` opens a transaction on the app-role pool, binds the org id inside that transaction, and runs `fn` with the transaction as the active scoped database handle:
+
+```ts
+await withOrgScope(appDb, orgId, async () => {
+  const db = getScopedDb(appDb);
+  return db.select().from(projects);
+});
+```
+
+The binding is transaction-local. Postgres reverts it on commit or rollback, so the value never leaks across pooled connections.
+
+The code uses `set_config('app.current_org_id', orgId, true)` instead of `SET LOCAL`. `SET LOCAL` cannot take a bind parameter, which would force string-concatenating the org id into SQL. `set_config` takes the value as a parameter. The org id is always server-derived, such as from a membership row, API key, or signed webhook, never user input.
+
+`withScopedDb` and `getScopedDb` propagate the active handle through Node's `AsyncLocalStorage`, so service code resolves the transaction at query time. The fallback passed to `getScopedDb` must be the app-role pool. If a query runs with no scope active, it should fail closed under RLS instead of reading across tenants.
+
 ## IDs
 
 `uuidv7()` generates the text primary key for every row:
@@ -114,3 +133,6 @@ The role integration tests are gated. They are skipped unless `DATABASE_URL` is 
 - [RFC 9562, Section 5.7: UUID Version 7](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.7) - the UUIDv7 spec.
 - [Drizzle ORM](https://orm.drizzle.team/docs/overview) - the query builder `createDb` returns.
 - [node-postgres: Pooling](https://node-postgres.com/features/pooling) - the `pg` connection pool.
+- [Postgres: System Administration Functions](https://www.postgresql.org/docs/current/functions-admin.html) - `set_config` and `current_setting`.
+- [Postgres: SET](https://www.postgresql.org/docs/current/sql-set.html) - `SET LOCAL` behavior.
+- [Node.js: AsyncLocalStorage](https://nodejs.org/api/async_context.html) - async context propagation.
