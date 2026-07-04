@@ -11,3 +11,4 @@ export { uuidv7 } from "./ids.js";
 export { runMigrations } from "./migrate.js";
 export { APP_ROLE, OPERATOR_ROLE, OWNER_ROLE, deriveRoleUrl, resolveDatabaseUrls } from "./roles.js";
 export { seed } from "./seed.js";
+export { getScopedDb, withOrgScope, withScopedDb, type ScopedDb } from "./scope.js";
