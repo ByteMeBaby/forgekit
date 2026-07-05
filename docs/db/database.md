@@ -104,6 +104,20 @@ The code uses `set_config('app.current_org_id', orgId, true)` instead of `SET LO
 
 `withScopedDb` and `getScopedDb` propagate the active handle through Node's `AsyncLocalStorage`, so service code resolves the transaction at query time. The fallback passed to `getScopedDb` must be the app-role pool. If a query runs with no scope active, it should fail closed under RLS instead of reading across tenants.
 
+Both outcomes of that resolution — the bound transaction or the app-pool fallback — pass through RLS on the app role, which is what makes a forgotten scope fail closed rather than leak:
+
+```mermaid
+flowchart TD
+  q["Service code at query time<br/>db = getScopedDb(appDb)"]
+  q --> store{"AsyncLocalStorage:<br/>is a scope active?"}
+  store -->|"inside withOrgScope"| tx["Transaction handle<br/>app.current_org_id is bound"]
+  store -->|"no scope active"| fb["App-pool fallback<br/>app.current_org_id is unset"]
+  tx --> onlyOrg["RLS returns that org's rows"]
+  fb --> zero["RLS returns zero rows<br/>fails closed, never another org"]
+```
+
+An unset `app.current_org_id` makes `current_setting('app.current_org_id', true)` return null, so the `tenant_isolation` comparison matches no row. The fallback is deliberately the app pool and never the operator pool: routing an unscoped query to the operator role would bypass RLS and read across tenants, the exact failure this design prevents.
+
 ## Tenant isolation policy
 
 Every tenant table follows the same pattern: it carries `org_id text not null` and a `tenant_isolation` policy. The `USING` clause governs reads, updates, and deletes. The `WITH CHECK` clause governs inserts and updates. Both require the row's `org_id` to equal `current_setting('app.current_org_id', true)`.
