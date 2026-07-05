@@ -6,6 +6,7 @@ Every doc explains why the thing exists first, then the engineering and technica
 
 ## Current Docs
 
+- [API skeleton and error shape](api/api-skeleton.md)
 - [Config env validation](config/env-validation.md)
 - [Database and the three-role pool](db/database.md)
 - [Dependency Flow ESLint rule](eslint-rules/dependency-flow.md)
