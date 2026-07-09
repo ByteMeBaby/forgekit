@@ -8,14 +8,15 @@ It is early and I am building it one feature at a time, so treat it as a work in
 
 ## Layout
 
-- `apps/web`: web app package
-- `apps/api`: API app package
+- `apps/web`: web app (TanStack Start)
+- `apps/api`: API app (Hono)
 - `packages/ui`: shared UI package
 - `packages/core`: core domain package
 - `packages/db`: database package
 - `packages/config`: shared config package
 - `tooling/typescript-config`: strict TypeScript base config
 - `tooling/eslint-config`: shared flat ESLint config
+- `tooling/eslint-plugin`: custom ESLint rules (dependency-flow, no-unscoped-db-mutation)
 - `tooling/vitest-config`: shared Vitest config
 
 ## Dependency Flow
@@ -30,7 +31,7 @@ See [docs/eslint-rules/dependency-flow.md](docs/eslint-rules/dependency-flow.md)
 - `packages/db` imports `@forgekit/config`
 - `packages/ui` has no internal dependencies
 
-Packages build to `dist` and publish `dist/index.js` and `dist/index.d.ts` through `main`, `types`, and `exports`.
+The internal packages (`ui`, `core`, `db`, `config`) build to `dist` and publish `dist/index.js` and `dist/index.d.ts` through `main`, `types`, and `exports`. `apps/api` builds the same way. `apps/web` is a TanStack Start app built with Vite to `dist/client` and `dist/server`.
 
 ## Gates
 
