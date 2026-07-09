@@ -11,7 +11,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
@@ -22,12 +24,12 @@
   "dependencies": {
     "@forgekit/core": "workspace:*",
     "@hono/node-server": "^2.0.8",
-    "hono": "^4.12.27"
+    "hono": "^4.12.28"
   },
   "devDependencies": {
     "@forgekit/typescript-config": "workspace:*",
     "@forgekit/vitest-config": "workspace:*",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "tsx": "^4.23.0"
   }
 }
