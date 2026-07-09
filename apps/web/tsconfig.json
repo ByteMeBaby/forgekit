@@ -1,10 +1,11 @@
 {
   "extends": "@forgekit/typescript-config/base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/__tests__/**"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "vitest.config.ts"],
+  "exclude": ["dist", ".output", ".nitro", ".tanstack", ".vinxi"]
 }

@@ -7,6 +7,11 @@ dist
 coverage
 playwright-report
 test-results
+.output
+.nitro
+.tanstack
+.vinxi
+apps/web/src/routeTree.gen.ts
 *.log
 .DS_Store
 

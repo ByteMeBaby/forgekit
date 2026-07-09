@@ -10,12 +10,20 @@ import tseslint from "typescript-eslint";
  */
 export const forgekitEslintConfig = defineConfig(
   {
-    ignores: ["**/dist/**", "**/coverage/**", "**/node_modules/**"]
+    ignores: [
+      "**/dist/**",
+      "**/coverage/**",
+      "**/node_modules/**",
+      "**/.output/**",
+      "**/.tanstack/**",
+      "**/.nitro/**",
+      "**/.vinxi/**"
+    ]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["**/*.ts"],
+    files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       "@forgekit": forgekitPlugin
     },
