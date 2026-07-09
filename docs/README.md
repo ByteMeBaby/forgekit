@@ -1,6 +1,6 @@
 # ForgeKit Docs
 
-ForgeKit docs are organized into topic subfolders. The current topic folder is [`eslint-rules/`](eslint-rules/), which documents the custom lint rules.
+ForgeKit docs are organized into topic subfolders: [`api/`](api/), [`config/`](config/), [`db/`](db/), [`web/`](web/), and [`eslint-rules/`](eslint-rules/).
 
 Every doc explains why the thing exists first, then the engineering and technical detail needed to work with it.
 
@@ -11,3 +11,4 @@ Every doc explains why the thing exists first, then the engineering and technica
 - [Database and the three-role pool](db/database.md)
 - [Dependency Flow ESLint rule](eslint-rules/dependency-flow.md)
 - [No Unscoped DB Mutation ESLint rule](eslint-rules/no-unscoped-db-mutation.md)
+- [Web app skeleton](web/app-skeleton.md)

@@ -19,6 +19,10 @@ It is early and I am building it one feature at a time, so treat it as a work in
 - `tooling/eslint-plugin`: custom ESLint rules (dependency-flow, no-unscoped-db-mutation)
 - `tooling/vitest-config`: shared Vitest config
 
+## Docs
+
+Feature and mechanism documentation lives in [`docs/`](docs/README.md).
+
 ## Dependency Flow
 
 The internal dependency flow is enforced by a custom ESLint rule that fails the build on forbidden cross-package imports. A forbidden import is any runtime package reaching past its allowed direct internal dependency, such as `@forgekit/api` importing `@forgekit/db` directly.
