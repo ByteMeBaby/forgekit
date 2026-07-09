@@ -1,13 +1,10 @@
-// Defines the TanStack Start root route and document shell.
+// Defines the TanStack Start root route and its view states.
 
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 
 import type React from "react";
-import type { ReactNode } from "react";
 
-type RootDocumentProps = Readonly<{
-  children: ReactNode;
-}>;
+import { Document } from "../components/document";
 
 /**
  * Root route registration for the ForgeKit web app.
@@ -27,47 +24,33 @@ export const Route = createRootRoute({
 
 function RootComponent(): React.JSX.Element {
   return (
-    <RootDocument>
+    <Document>
       <main>
         <h1>ForgeKit</h1>
         <Outlet />
       </main>
-    </RootDocument>
+    </Document>
   );
 }
 
 function RootErrorComponent(): React.JSX.Element {
   return (
-    <RootDocument>
+    <Document>
       <main>
         <h1>ForgeKit</h1>
         <p>Something went wrong.</p>
       </main>
-    </RootDocument>
+    </Document>
   );
 }
 
 function RootNotFoundComponent(): React.JSX.Element {
   return (
-    <RootDocument>
+    <Document>
       <main>
         <h1>ForgeKit</h1>
         <p>Page not found.</p>
       </main>
-    </RootDocument>
-  );
-}
-
-function RootDocument({ children }: RootDocumentProps): React.JSX.Element {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
+    </Document>
   );
 }
