@@ -24,7 +24,7 @@
   "dependencies": {
     "@forgekit/core": "workspace:*",
     "@hono/node-server": "^2.0.8",
-    "hono": "^4.12.28"
+    "hono": "^4.12.30"
   },
   "devDependencies": {
     "@forgekit/typescript-config": "workspace:*",
