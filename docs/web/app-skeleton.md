@@ -2,7 +2,7 @@
 
 `apps/web` is a TanStack Start React app. It server-renders the placeholder home page and hydrates the same route tree on the client.
 
-This is the booting frontend shell. Later feature chunks attach UI, a typed API client, theming, and auth to the same app boundary.
+This is the booting frontend shell. Later feature chunks attach a typed API client, a `ThemeProvider`, and auth to the same app boundary.
 
 ## Routing and the document shell
 
@@ -23,6 +23,16 @@ tsr generate && tsc -p tsconfig.typecheck.json --noEmit
 ```
 
 A clean checkout rebuilds the generated route tree during build or before type checking. No separate manual step is needed for those gates.
+
+## Styling
+
+`apps/web/vite.config.ts` compiles Tailwind v4 through the first-party `@tailwindcss/vite` plugin. `apps/web/src/styles.css` imports `tailwindcss` first, then `@forgekit/ui/theme.css`, so the application receives Tailwind utilities and the ForgeKit semantic theme in one global stylesheet. The stylesheet enters the app through a side-effect import in `apps/web/src/routes/__root.tsx`; TanStack Start injects it during server rendering and hydration, so every route receives it.
+
+The stylesheet includes `@source "../node_modules/@forgekit/ui/dist"`. Tailwind does not scan `node_modules` by default, so this points at pnpm's symlinked compiled UI package and generates the utility classes used inside UI components.
+
+The `.dark` class flips the semantic theme tokens for its descendants. A later chunk adds the `ThemeProvider` that toggles that class on the document root.
+
+The UI package must be built before the app can import it and before `@source` can scan its component output, so every task that consumes UI depends on Turborepo's `^build`, including `dev`. `turbo dev` therefore builds UI once before starting the watchers, then runs the UI package's `tsc -p tsconfig.json --watch --preserveWatchOutput` script so its `dist` stays current while the web development server runs.
 
 ## Gates for a Vite app
 
@@ -47,7 +57,7 @@ A clean checkout rebuilds the generated route tree during build or before type c
 
 ## Dependency edge
 
-`apps/web/src/components/home-page.tsx` imports `UI_VERSION` from `@forgekit/ui` and renders it in the placeholder. The `@forgekit/web` package declares `@forgekit/ui` as a workspace dependency, and `@forgekit/dependency-flow` allows that as the only internal runtime edge from web. Because the import is compiled into the app, Turborepo's `^build` dependency ordering has a real package edge to follow.
+`apps/web/src/components/home-page.tsx` imports `Button` and `UI_VERSION` from `@forgekit/ui` and renders them in the placeholder. The `@forgekit/web` package declares `@forgekit/ui` as a workspace dependency, and `@forgekit/dependency-flow` allows that as the only internal runtime edge from web. Because the import is compiled into the app, Turborepo's `^build` dependency ordering has a real package edge to follow.
 
 ## Running it
 
