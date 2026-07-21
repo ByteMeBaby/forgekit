@@ -1,0 +1,6 @@
+/* App stylesheet: Tailwind base plus the ForgeKit theme, scanning the compiled UI package. */
+
+@import "tailwindcss";
+@import "@forgekit/ui/theme.css";
+
+@source "../node_modules/@forgekit/ui/dist";

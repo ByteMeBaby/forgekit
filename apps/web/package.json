@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@forgekit/typescript-config": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-cli": "^1.167.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.3",
     "vite": "^8.1.5"
   }
 }

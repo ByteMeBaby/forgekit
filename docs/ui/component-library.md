@@ -22,10 +22,10 @@ An app stylesheet must import Tailwind before the ForgeKit theme and source the 
 @import "tailwindcss";
 @import "@forgekit/ui/theme.css";
 
-@source "../../../packages/ui/dist";
+@source "../node_modules/@forgekit/ui/dist";
 ```
 
-The `@source` path is application-stylesheet-relative. The example fits a stylesheet under `apps/web/src`; use the equivalent path to the compiled `@forgekit/ui/dist` in another app. This wiring belongs to the later app integration chunk.
+The `@source` path is application-stylesheet-relative. The example fits a stylesheet under `apps/web/src`; use the equivalent path to the compiled `@forgekit/ui/dist` in another app. This wiring belongs in each application stylesheet that consumes UI components.
 
 `src/theme.css` is the source of truth for semantic tokens and radii. It defines light values on `:root` and dark values under `.dark`. A `.dark` ancestor flips the tokens for all descendants. The later `ThemeProvider` applies or removes that class on `<html>`.
 
