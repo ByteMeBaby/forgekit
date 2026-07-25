@@ -7,10 +7,11 @@ import { describe, expect, it } from "vitest";
 import { HomePage } from "../components/home-page";
 
 describe("HomePage", () => {
-  it("renders the placeholder and UI package version", () => {
+  it("renders the placeholder, UI action, and package version", () => {
     render(<HomePage />);
 
     expect(screen.getByText("ForgeKit web is running.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Get started" })).toBeInTheDocument();
     expect(screen.getByText(`UI package version: ${UI_VERSION}`)).toBeInTheDocument();
   });
 });

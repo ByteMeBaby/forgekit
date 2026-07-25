@@ -1,6 +1,6 @@
 // Defines the placeholder home page component.
 
-import { UI_VERSION } from "@forgekit/ui";
+import { Button, UI_VERSION } from "@forgekit/ui";
 
 import type React from "react";
 
@@ -9,8 +9,9 @@ import type React from "react";
  */
 export function HomePage(): React.JSX.Element {
   return (
-    <section>
+    <section className="text-foreground">
       <p>ForgeKit web is running.</p>
+      <Button type="button">Get started</Button>
       <p>UI package version: {UI_VERSION}</p>
     </section>
   );

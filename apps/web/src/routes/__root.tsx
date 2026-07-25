@@ -2,6 +2,8 @@
 
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 
+import "../styles.css";
+
 import type React from "react";
 
 import { Document } from "../components/document";
