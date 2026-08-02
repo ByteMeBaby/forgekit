@@ -14,8 +14,8 @@
     "@forgekit/ui": "workspace:*",
     "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-start": "^1.168.27",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@forgekit/typescript-config": "workspace:*",
@@ -23,11 +23,11 @@
     "@tanstack/router-cli": "^1.167.19",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
     "jsdom": "^29.1.1",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.1.5"
+    "vite": "^8.2.0"
   }
 }

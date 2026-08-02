@@ -19,11 +19,11 @@
     "@forgekit/eslint-config": "workspace:*",
     "@forgekit/typescript-config": "workspace:*",
     "@forgekit/vitest-config": "workspace:*",
-    "@playwright/test": "^1.53.2",
-    "eslint": "^10.6.0",
-    "turbo": "^2.10.4",
+    "@playwright/test": "^1.62.1",
+    "eslint": "^10.8.0",
+    "turbo": "^2.10.8",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.63.0",
+    "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
   },
   "pnpm": {
