@@ -1,11 +1,42 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Dependabot version updates for the pnpm workspace.
+#
+# Dependabot reads the root manifest and follows pnpm-workspace.yaml, so a
+# single entry covers apps/*, packages/*, and tooling/*.
+#
+# Grouping exists because packages that must move together were arriving
+# separately. react and react-dom assert exact version equality at runtime, so
+# a PR bumping one alone is broken on arrival, and the Radix components share
+# internal packages that fork when a single component is bumped in isolation.
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
       interval: "weekly"
+    # The default is 5, which silently hid two thirds of the outdated packages.
+    open-pull-requests-limit: 10
+    groups:
+      # A dependency joins the first group it matches, so the catch-all
+      # dev-tooling entry has to stay last.
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      radix:
+        patterns:
+          - "@radix-ui/*"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      dev-tooling:
+        dependency-type: "development"
+        # Majors stay ungrouped so they arrive as their own reviewable PR.
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
